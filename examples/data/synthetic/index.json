@@ -1,0 +1,30 @@
+{
+  "utterances-index": {
+    "role": "<class 'str'>"
+  },
+  "speakers-index": {
+    "role": "<class 'str'>",
+    "age": "<class 'int'>",
+    "gender": "<class 'str'>",
+    "persona": "<class 'str'>",
+    "phq9": "<class 'int'>"
+  },
+  "conversations-index": {
+    "user_id": "<class 'str'>",
+    "age": "<class 'int'>",
+    "gender": "<class 'str'>",
+    "persona": "<class 'str'>",
+    "phq9": "<class 'int'>",
+    "n_utterances": "<class 'int'>"
+  },
+  "overall-index": {
+    "name": "<class 'str'>",
+    "description": "<class 'str'>",
+    "num_conversations": "<class 'int'>",
+    "num_utterances": "<class 'int'>",
+    "num_speakers": "<class 'int'>",
+    "seed": "<class 'int'>",
+    "synthetic": "<class 'bool'>"
+  },
+  "version": 1
+}

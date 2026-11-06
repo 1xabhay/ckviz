@@ -1,0 +1,16 @@
+name: politeness-2013-classifiers
+description: "Table 4 of Danescu-Niculescu-Mizil et al. 2013: polite (top quartile) vs impolite (bottom quartile) requests; BOW and BOW + strategies (Ling.) linear SVMs, in-domain (10-fold CV) and cross-domain"
+reproduces: https://arxiv.org/abs/1306.6078
+dataset: politeness-wiki-se
+stages:
+  - parse: {}
+  - politeness: {}
+  - filter: {column: meta.Binary, op: "!=", value: "0"}
+  - text_classify: {features: [unigrams], label: meta.Binary, value: "1", domain: meta.corpus, train: wikipedia-politeness-corpus, test: wikipedia-politeness-corpus, model: svm, C: 0.1, min_count: 10, folds: 10, seed: 0}
+  - text_classify: {features: [unigrams], label: meta.Binary, value: "1", domain: meta.corpus, train: stack-exchange-politeness-corpus, test: stack-exchange-politeness-corpus, model: svm, C: 0.1, min_count: 10, folds: 10, seed: 0}
+  - text_classify: {features: [unigrams], label: meta.Binary, value: "1", domain: meta.corpus, train: wikipedia-politeness-corpus, test: stack-exchange-politeness-corpus, model: svm, C: 0.1, min_count: 10, folds: 10, seed: 0}
+  - text_classify: {features: [unigrams], label: meta.Binary, value: "1", domain: meta.corpus, train: stack-exchange-politeness-corpus, test: wikipedia-politeness-corpus, model: svm, C: 0.1, min_count: 10, folds: 10, seed: 0}
+  - text_classify: {features: [unigrams, meta.politeness_strategies], label: meta.Binary, value: "1", domain: meta.corpus, train: wikipedia-politeness-corpus, test: wikipedia-politeness-corpus, model: svm, C: 0.1, min_count: 10, folds: 10, seed: 0}
+  - text_classify: {features: [unigrams, meta.politeness_strategies], label: meta.Binary, value: "1", domain: meta.corpus, train: stack-exchange-politeness-corpus, test: stack-exchange-politeness-corpus, model: svm, C: 0.1, min_count: 10, folds: 10, seed: 0}
+  - text_classify: {features: [unigrams, meta.politeness_strategies], label: meta.Binary, value: "1", domain: meta.corpus, train: wikipedia-politeness-corpus, test: stack-exchange-politeness-corpus, model: svm, C: 0.1, min_count: 10, folds: 10, seed: 0}
+  - text_classify: {features: [unigrams, meta.politeness_strategies], label: meta.Binary, value: "1", domain: meta.corpus, train: stack-exchange-politeness-corpus, test: wikipedia-politeness-corpus, model: svm, C: 0.1, min_count: 10, folds: 10, seed: 0}

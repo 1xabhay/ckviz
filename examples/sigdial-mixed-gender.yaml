@@ -1,0 +1,8 @@
+name: sigdial-mixed-gender
+description: Movie dialogue in mixed-gender vs single-gender conversations (TextCleaner + Fighting Words).
+reproduces: https://github.com/CornellNLP/ConvoKit/blob/master/examples/sigdial-demo.ipynb
+dataset: movie-corpus
+stages:
+  - text_clean: {}
+  - speakers_include: {key: gender, values: [M, F], into: mixed}
+  - fighting_words: {group_by: mixed, class1: "True", class2: "False", ngram_max: 3}

@@ -1,0 +1,9 @@
+name: echoes-of-power-wiki
+description: Linguistic coordination toward / by Wikipedia admins vs non-admins (Echoes of Power, Fig. 1).
+reproduces: https://arxiv.org/abs/1112.3670 (Fig. 1) via ConvoKit examples/coordination/examples.ipynb (Example 1)
+dataset: wiki-corpus
+stages:
+  # Fig. 1(a) P_target: does everyone coordinate more toward admins than toward non-admins?
+  - coordination: {group_by: meta.is-admin, side: target, focus: targets, target_thresh: 7, split_by: [meta.is-admin]}
+  # Fig. 1(b) P_speaker: do admins coordinate to others more or less than non-admins?
+  - coordination: {group_by: meta.is-admin, side: speaker, speaker_thresh: 7, target_thresh: 7, split_by: [meta.is-admin]}

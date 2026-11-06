@@ -1,0 +1,32 @@
+[project]
+name = "ckviz-stats"
+version = "0.1.0"
+description = "ckviz stages wrapping statsmodels: ANOVA, a random-intercept linear mixed model and a binomial mixed model"
+requires-python = ">=3.12"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Abhay Singh" }]
+keywords = ["ckviz", "convokit", "statsmodels", "mixed-models"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Text Processing :: Linguistic",
+]
+dependencies = ["ckviz", "statsmodels>=0.14.4"]
+
+[project.urls]
+Repository = "https://github.com/1xabhay/ckviz"
+Issues = "https://github.com/1xabhay/ckviz/issues"
+
+[project.entry-points."ckviz.stages"]
+stats = "ckviz_stats"
+
+[tool.uv.sources]
+ckviz = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.11.7,<0.12.0"]
+build-backend = "uv_build"

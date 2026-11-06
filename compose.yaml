@@ -1,0 +1,23 @@
+services:
+  app:
+    build: {context: ., target: base, args: {UV_SYNC_ARGS: "--extra dlatk --extra stats --extra sentiment"}}
+    ports: ["127.0.0.1:${CKVIZ_PORT:-8765}:8000"]  # no auth: never publish beyond localhost
+    environment: {CKVIZ_HOST: 0.0.0.0}  # reachable only through the localhost-published port above
+    volumes:  # the app runs as uid 1000; on Linux, create ./data and ./pipelines first and make them writable by it
+      - ./datasets.yaml:/app/datasets.yaml:ro
+      - ./pipelines:/app/pipelines
+      - ./examples:/app/examples:ro
+      - ./data:/app/data
+    depends_on: {db: {condition: service_healthy}}
+
+  db:  # local Postgres for tests
+    image: postgres:17
+    environment: {POSTGRES_PASSWORD: ckviz}
+    ports: ["127.0.0.1:${CKVIZ_DB_PORT:-54329}:5432"]
+    healthcheck: {test: ["CMD", "pg_isready", "-U", "postgres"], interval: 2s, retries: 15}
+
+  test:
+    build: {context: ., target: dev}
+    environment: {CKVIZ_TEST_DSN: "postgresql://postgres:ckviz@db/postgres"}
+    depends_on: {db: {condition: service_healthy}}
+    profiles: [test]

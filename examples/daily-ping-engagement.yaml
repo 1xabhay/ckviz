@@ -1,0 +1,14 @@
+name: daily-ping-engagement
+description: >
+  Ping episodes from chat logs where a bot messages each participant daily: a ping plus the participant's messages until
+  the next day's ping or a time limit. The dataset name is a placeholder: point it at your own corpus in datasets.yaml.
+  The stage forms hold the field names and status options; checks on missing or empty fields report n/a.
+dataset: daily-ping
+stages:
+  # Set day_max to your data's last day.
+  - ping_validate: {day_max: 10}
+  - ping_episodes: {max_hours: 24}
+  - engagement_grid: {day_max: 10}
+  # One row per episode: replies by day.
+  - filter: {column: episode, op: "==", value: "true"}
+  - count_by: {rows: episode_day, cols: replied}

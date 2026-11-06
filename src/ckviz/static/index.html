@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ckviz</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+  /* --muted is for non-text only; --muted-text >= 4.5:1, --border >= 3:1 on surface and page */
+  --muted-text: #6b6a65; --border: #898781; --primary: #2264b5;
+  --grid: #e1e0d9; --axis: #c3c2b7; --ring: rgba(11,11,11,0.10);
+  --series-1: #2a78d6; --pole-neg: #e34948; --wash: #f0efec;
+  --series-2: #eb6834; --series-3: #1baf7a; --series-4: #eda100; --series-5: #e87ba4; --series-6: #008300; --series-7: #6250d6; --series-8: #e34948;
+  --good: #006300; --critical: #d03b3b;
+  /* ordinal ramp (one hue, validated --ordinal): light end clears 2:1 on surface; flips anchor in dark */
+  --ord-1: #86b6ef; --ord-2: #3987e5; --ord-3: #1c5cab; --ord-4: #0d366b;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+    --muted-text: #898781; --border: #706f6a; --primary: #256abf;
+    --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10);
+    --series-1: #3987e5; --pole-neg: #e66767; --wash: #383835;
+    --series-2: #d95926; --series-3: #199e70; --series-4: #c98500; --series-5: #d55181; --series-6: #008300; --series-7: #9085e9; --series-8: #e66767;
+    --good: #0ca30c; --critical: #e66767;
+    --ord-1: #184f95; --ord-2: #2a78d6; --ord-3: #6da7ec; --ord-4: #b7d3f6;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { position: sticky; top: 0; z-index: 2; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+         padding: 10px 20px; background: var(--surface); border-bottom: 1px solid var(--grid); }
+header h1 { font-size: 15px; margin: 0 12px 0 0; }
+main { max-width: 1100px; margin: 0 auto; padding: 16px 20px 80px; }
+input, select, button, textarea { font: inherit; color: inherit; background: var(--surface); border: 1px solid var(--border);
+                                  border-radius: 6px; padding: 4px 8px; }
+button { cursor: pointer; } button:hover { background: var(--wash); }
+button.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+button.primary:disabled { opacity: .6; cursor: progress; }
+:focus-visible { outline: 2px solid var(--series-1); outline-offset: 1px; }
+.sep { flex: 1; }
+.muted { color: var(--muted-text); } .small { font-size: 12px; }
+#repro { margin: -8px 0 12px; } #repro a { color: var(--ink-2); }
+#desc { width: 100%; margin-bottom: 12px; border: none; background: none; color: var(--ink-2); padding: 0; }
+
+.card { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; margin: 0 0 12px; transition: opacity .15s; }
+.card.stale .out { opacity: .45; }
+.card-head { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--grid); }
+.card-head b { font-weight: 600; } .card-head .idx { color: var(--muted-text); width: 1.5em; }
+.card-head button { padding: 0 6px; border: none; color: var(--muted-text); }
+.sdesc { margin: 0; padding: 6px 12px 0; font-size: 12px; color: var(--ink-2); max-width: 80ch; }
+form.cfg { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 10px 12px; }
+form.cfg label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--ink-2); }
+form.cfg input[type=text], form.cfg select { min-width: 160px; }
+form.cfg input[type=number] { width: 80px; }
+form.cfg .help { font-size: 11px; color: var(--muted-text); max-width: 240px; }
+form.cfg .ferr { font-size: 11px; color: var(--critical); }
+form.cfg .ferr:empty { display: none; }
+[aria-invalid=true] { border-color: var(--critical); }
+.status { padding: 0 12px 8px; font-size: 12px; color: var(--ink-2); }
+.status.error { color: var(--critical); white-space: pre-wrap; }
+.status ul { margin: 2px 0 0; padding-left: 18px; }
+.warn { margin: 0 0 8px; padding: 6px 10px; border-left: 3px solid var(--critical); background: var(--wash); color: var(--ink); font-size: 12px; border-radius: 0 6px 6px 0; }
+.empty { margin: 0; font-size: 12px; color: var(--ink-2); }
+#banner { display: flex; gap: 8px; align-items: flex-start; margin: 0 0 12px; padding: 8px 12px; border: 1px solid var(--critical);
+          border-radius: 8px; background: var(--surface); color: var(--critical); }
+#banner[hidden] { display: none; }
+#banner span { flex: 1; white-space: pre-wrap; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.out { padding: 0 12px 12px; overflow-x: auto; }
+
+table { border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 3px 10px 3px 0; border-bottom: 1px solid var(--grid); max-width: 360px;
+         overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: top; }
+th { color: var(--ink-2); font-weight: 600; }
+.scroll { max-height: 232px; overflow: auto; border: 1px solid var(--grid); border-radius: 6px; padding-left: 8px; }
+.scroll th { position: sticky; top: 0; background: var(--surface); }
+details summary { cursor: pointer; font-size: 12px; color: var(--ink-2); margin-top: 8px; }
+
+.bars { display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; align-items: center; max-width: 720px; }
+.bars .lab { font-size: 12px; color: var(--ink-2); text-align: right; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.track { display: flex; align-items: center; gap: 6px; height: 24px; }  /* whole row is the hit target */
+.bar { height: 18px; min-width: 1px; background: var(--series-1); border-radius: 0 4px 4px 0; outline-offset: 2px; }
+[data-pt]:hover .bar, [data-pt]:focus .bar, [data-pt]:hover .gbar, [data-pt]:focus .gbar { filter: brightness(1.15); }
+[data-pt]:focus { outline: 2px solid var(--series-1); outline-offset: 0; }
+.val { font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+.fw { display: grid; grid-template-columns: max-content 1fr 1fr max-content; gap: 2px 0; align-items: center; max-width: 820px; }
+.fw .lab { font-size: 12px; padding: 0 8px; white-space: nowrap; }
+.fw .lab.l { text-align: right; } .fw .half { display: flex; height: 24px; align-items: center; gap: 4px; }
+.fw .half.l { justify-content: flex-end; border-right: 1px solid var(--axis); padding-right: 1px; }
+.fw .half.r { padding-left: 1px; }
+.fw .bar.neg { background: var(--pole-neg); border-radius: 4px 0 0 4px; }
+.fw .hdr { font-size: 12px; color: var(--ink-2); font-weight: 600; padding: 0 8px 6px; display: flex; align-items: center; gap: 6px; }
+.fw .hdr.l { justify-content: flex-end; grid-column: 1 / 3; } .fw .hdr.r { grid-column: 3 / 5; }
+.sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+/* grouped bars: horizontal (long feature names), one hairline grid per tick, zero baseline in --axis */
+.gb { display: grid; grid-template-columns: max-content minmax(240px, 1fr); column-gap: 10px; align-items: center; max-width: 820px; }
+.gb .lab { font-size: 12px; color: var(--ink-2); text-align: right; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gb .plot { padding: 4px 0; min-height: 24px; background-repeat: no-repeat; }  /* the whole category row is the hit target */
+.gb .line { position: relative; height: 12px; }  /* 10px bar + 2px surface gap */
+.gb .gbar { position: absolute; top: 0; height: 10px; min-width: 1px; border-radius: 0 4px 4px 0; }
+.gb .gbar.neg { border-radius: 4px 0 0 4px; }
+.gb .ticks { position: relative; height: 16px; font-size: 11px; color: var(--muted-text); font-variant-numeric: tabular-nums; }
+.gb .ticks span { position: absolute; transform: translateX(-50%); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--ink-2); margin: 0 0 6px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+.tree { max-width: 820px; }
+.utt { border-left: 2px solid var(--grid); padding: 4px 0 4px 10px; margin: 2px 0; }
+.utt .who { font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.utt .meta { font-size: 11px; color: var(--muted-text); margin-left: 6px; }
+/* heatmap ("lasagna"): 2px surface gaps, sticky column header, vertical scroll for many rows */
+.hm-wrap { max-width: 820px; max-height: 480px; overflow: auto; }
+.hm { display: grid; gap: 2px; align-items: center; font-size: 11px; }
+.hm .rl { color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 6px; line-height: 14px; }
+.hm .ch { position: sticky; top: 0; z-index: 1; background: var(--surface); color: var(--muted-text); text-align: center;
+          white-space: nowrap; overflow: visible; font-variant-numeric: tabular-nums; height: 16px; }
+.hm .grp { grid-column: 1 / -1; border-top: 1px solid var(--axis); color: var(--ink-2); font-weight: 600; padding: 4px 0 1px; }
+.hm .c { height: 14px; border-radius: 2px; }
+.nd { box-shadow: inset 0 0 0 1px var(--axis); }  /* no data: a hollow cell, not a fill */
+.hm .c:hover, .hm .c:focus { outline: 2px solid var(--ink); outline-offset: 0; }
+/* line / interval */
+.lc { display: block; width: 100%; max-width: 820px; height: auto; overflow: visible; font-size: 11px; }
+.lc text { fill: var(--muted-text); font-variant-numeric: tabular-nums; } .lc .alab { fill: var(--ink-2); }
+.lc .xh line { stroke: var(--ink-2); stroke-width: 1; opacity: 0; } .lc .xh:hover line, .lc .xh:focus line { opacity: 1; }
+.lc .xh:focus { outline: none; }
+.sw.dotk { border-radius: 50%; }
+.lkey { display: inline-block; width: 14px; height: 2px; border-radius: 1px; }
+.iv .line { height: 16px; }
+.iv .wh { position: absolute; top: 7px; height: 2px; border-radius: 1px; }
+.iv .dot { position: absolute; top: 3px; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; box-shadow: 0 0 0 2px var(--surface); }
+.axl { font-size: 12px; color: var(--ink-2); text-align: center; }
+#add { margin-top: 4px; max-width: 100%; }
+#tip { position: fixed; pointer-events: none; background: var(--surface); border: 1px solid var(--ring); border-radius: 6px;
+       padding: 4px 8px; font-size: 12px; box-shadow: 0 2px 8px var(--ring); display: none; z-index: 5; }
+#tip strong { font-variant-numeric: tabular-nums; } #tip > strong { display: block; }
+#tip .tl { color: var(--ink-2); margin-bottom: 2px; }
+#tip .key { display: inline-block; width: 10px; height: 2px; margin: 0 6px 3px 0; vertical-align: middle; }  /* line key, not a box */
+</style>
+</head>
+<body>
+<header>
+  <h1>ckviz</h1>
+  <label class="small muted">pipeline <select id="pipelines"></select></label>
+  <input id="name" aria-label="pipeline name" size="22">
+  <button id="save">Save</button>
+  <span class="sep"></span>
+  <label class="small muted">run on <select id="dataset"></select></label>
+  <button id="snapshot" hidden title="Pull a fresh snapshot from the database">Refresh data</button>
+  <button id="run" class="primary" title="Run (Ctrl/⌘+Enter)">Run ▶</button>
+</header>
+<main>
+  <div id="banner" role="alert" hidden><span id="banner-msg"></span><button id="banner-x" aria-label="Dismiss error">✕</button></div>
+  <input id="desc" placeholder="Describe what this pipeline answers…" aria-label="description">
+  <div id="repro" class="small muted"></div>
+  <div id="stages"></div>
+  <select id="add" aria-label="add stage"><option value="">+ Add stage…</option></select>
+</main>
+<div id="live" class="sr-only" aria-live="polite"></div>
+<div id="tip" role="tooltip"></div>
+<script>
+const $ = (id) => document.getElementById(id);
+const S = { schemas: {}, datasets: {}, p: { name: "untitled", description: "", stages: [] }, res: null, staleFrom: Infinity,
+            job: null, dirty: false, loaded: "", colors: new Map(), open: new Set() };
+const COLUMN_FIELDS = new Set(["column", "by", "group_by"]);
+
+const SVG = new Set(["svg", "g", "path", "line", "rect", "text", "circle"]);
+function h(tag, attrs = {}, ...kids) {
+  const el = SVG.has(tag) ? document.createElementNS("http://www.w3.org/2000/svg", tag) : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else if (v !== false && v != null) el.setAttribute(k, v === true ? "" : v);
+  }
+  for (const k of kids.flat(Infinity)) if (k != null && k !== false) el.append(k instanceof Node ? k : String(k));
+  return el;
+}
+
+async function api(path, opts = {}) {
+  const r = await fetch(path, { headers: { "content-type": "application/json", "x-ckviz": "1" }, ...opts });
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail ?? r.statusText));
+  return body;
+}
+
+const stageName = (s) => Object.keys(s)[0];
+const stageCfg = (s) => Object.values(s)[0] ?? {};
+const announce = (msg) => ($("live").textContent = msg);
+function showError(msg) { $("banner").hidden = false; $("banner-msg").textContent = msg; }
+$("banner-x").onclick = () => ($("banner").hidden = true);
+
+// --- tooltip (values lead, labels follow); items: [{v, name?, color?}] ---
+function tip(el, label, items) {
+  const show = (x, y) => {
+    const t = $("tip");
+    t.replaceChildren(...(items.length === 1 && !items[0].name ? [h("strong", {}, items[0].v), label]
+      : [h("div", { class: "tl" }, label), ...items.map((it) => h("div", {}, h("span", { class: "key", style: `background:${it.color}` }), h("strong", {}, it.v), " ", it.name))]));
+    t.style.display = "block"; t.style.left = x + 12 + "px"; t.style.top = y + 12 + "px";
+  };
+  el.dataset.pt = ""; el.setAttribute("role", "img");
+  el.setAttribute("aria-label", `${label}: ${items.map((it) => (it.name ? it.name + " " : "") + it.v).join(", ")}`);
+  el.addEventListener("pointermove", (e) => show(e.clientX, e.clientY));
+  el.addEventListener("focus", () => { const r = el.getBoundingClientRect(); show(r.left + 24, r.bottom - 12); });
+  for (const ev of ["pointerleave", "blur"]) el.addEventListener(ev, () => ($("tip").style.display = "none"));
+  return el;
+}
+
+// One tab stop per chart: roving tabindex, arrows/Home/End move between marks, the tooltip follows focus.
+// The Table twin carries every value too, so keyboard users never have to walk 30 bars to get past a chart.
+// A grid (data-cols = w, marks in row-major order) moves by row on Up/Down and by column on Left/Right.
+function roving(root) {
+  const pts = [...root.querySelectorAll("[data-pt]")], w = +root.dataset.cols || 1;
+  pts.forEach((p, i) => (p.tabIndex = i ? -1 : 0));
+  root.addEventListener("keydown", (e) => {
+    const i = pts.indexOf(document.activeElement);
+    const j = { ArrowDown: i + w, ArrowRight: i + 1, ArrowUp: i - w, ArrowLeft: i - 1, Home: 0, End: pts.length - 1 }[e.key];
+    if (i < 0 || j == null) return;
+    e.preventDefault();
+    if (j < 0 || j >= pts.length || (w > 1 && /Left|Right/.test(e.key) && Math.floor(j / w) !== Math.floor(i / w))) return;  // stay at the edge
+    pts[i].tabIndex = -1; pts[j].tabIndex = 0; pts[j].focus();
+  });
+}
+
+// --- number formatting (fmt-begin) ---
+const num = (v) => Number(v.toPrecision(3)).toString();
+const isP = (col) => /^p($|_)/.test(col ?? "");
+function fmt(v, col) {
+  if (v == null) return "—";
+  if (typeof v !== "number") return v;
+  if (!Number.isFinite(v)) return String(v);
+  if (v === 0) v = 0;  // -0 (a rounded tiny negative) reads as "-0"
+  if (isP(col)) return v === 0 ? "< 1e-300" : v < 0.001 ? v.toExponential(1) : num(v);
+  if (Number.isInteger(v)) return v.toLocaleString();
+  const a = Math.abs(v);
+  return a >= 1000 ? v.toLocaleString(undefined, { maximumFractionDigits: 0 })
+    : a < 1e-4 ? v.toExponential(2) : v.toLocaleString(undefined, { maximumSignificantDigits: 3 });
+}
+// (fmt-end)
+
+const cell = (col, v) => v !== null && typeof v === "object" ? JSON.stringify(v)
+  : col === "timestamp" ? (typeof v === "number" && v ? new Date(v * 1000).toISOString().slice(0, 16).replace("T", " ") : v || "")
+  : col === "id" || col.endsWith("_id") || col === "reply_to" ? v ?? "" : fmt(v, col);
+
+function tableOf(columns, rows) {
+  return h("div", { class: "scroll" }, h("table", {}, h("thead", {}, h("tr", {}, columns.map((c) => h("th", {}, c)))),
+    h("tbody", {}, rows.map((r) => h("tr", {}, r.map((v, j) => h("td", { title: typeof v === "string" ? v : null }, cell(columns[j], v))))))));
+}
+
+const WARN = /warn|withheld|⚠/i;
+const noteOf = (t) => t && (WARN.test(t) ? h("p", { class: "warn" }, "⚠ ", t.replace(/^\s*⚠\s*/, "")) : h("div", { class: "small muted" }, t));
+
+function ticksFor(lo, hi) {
+  const raw = (hi - lo) / 4 || 1, mag = 10 ** Math.floor(Math.log10(raw));
+  const step = [1, 2, 5, 10].map((m) => m * mag).find((s) => s >= raw);
+  const t = [];
+  for (let x = Math.floor(lo / step) * step; x <= hi + step * 1e-9; x += step) t.push(+x.toPrecision(12));
+  if (t.at(-1) < hi) t.push(+(t.at(-1) + step).toPrecision(12));
+  return t;
+}
+
+// Colour follows the entity: a group name keeps its slot across every card (first-seen order), never cycled past 8.
+function slots(names) {
+  const fresh = [...new Set(names.filter((n) => !S.colors.has(n)))];
+  if (S.colors.size + fresh.length > 8) return null;
+  for (const n of fresh) S.colors.set(n, S.colors.size + 1);
+  return names.map((n) => `var(--series-${S.colors.get(n)})`);
+}
+
+// Shared horizontal value axis: hairline grid painted as the row background (zero in --axis), tick labels below.
+function hAxis(t) {
+  const lo = t[0], span = t.at(-1) - lo || 1, pct = (x) => ((x - lo) / span) * 100;
+  const grid = t.map((x) => { const c = x === 0 ? "--axis" : "--grid"; return `linear-gradient(var(${c}), var(${c})) ${pct(x)}% 0 / 1px 100% no-repeat`; }).join(",");
+  return { pct, grid, ticks: h("div", { class: "ticks", "aria-hidden": "true" }, t.map((x) => h("span", { style: `left:${pct(x)}%` }, fmt(x)))) };
+}
+
+// Legend only for >= 2 series (one series: the card title names it). The key mirrors the mark.
+const legend = (series, colors, key = "sw") => series.length > 1 &&
+  h("div", { class: "legend" }, series.map((s, j) => h("span", {}, h("span", { class: key, style: `background:${colors[j]}` }), s.name)));
+
+function groupedBars(c, colors, nRows) {
+  // One shared axis, zero baseline; bars grow from zero left (neg) or right (pos). One hit row per category, all series in its tooltip.
+  const vals = c.series.flatMap((s) => s.values).filter((v) => typeof v === "number");
+  const { pct, grid, ticks } = hAxis(ticksFor(Math.min(0, ...vals), Math.max(0, ...vals)));
+  const z = pct(0);
+  return [
+    legend(c.series, colors),
+    h("div", { class: "gb chart", role: "group", "aria-label": `${c.measure ?? "value"} by ${c.series.map((s) => s.name).join(" and ")}; arrow keys move between rows` },
+      c.labels.map((l, i) => [
+        h("div", { class: "lab", title: l }, l),
+        tip(h("div", { class: "plot", style: `background:${grid}` }, c.series.map((s, j) => {
+          const v = s.values[i];
+          return h("div", { class: "line" }, typeof v === "number" && h("div", { class: "gbar" + (v < 0 ? " neg" : ""),
+            style: `background:${colors[j]};left:${Math.min(z, pct(v))}%;width:${Math.abs(pct(v) - z)}%` }));
+        })), l + (c.measure ? ` · ${c.measure}` : ""),
+        c.series.map((s, j) => ({ v: typeof s.values[i] === "number" ? fmt(s.values[i], c.measure) : "no value", name: s.name, color: colors[j] }))),
+      ]),
+      h("div", {}), ticks),
+    nRows > c.labels.length && h("div", { class: "small muted" }, `chart shows the first ${c.labels.length} of ${fmt(nRows)} rows; all are in the table`),
+  ];
+}
+
+// (geom-begin)
+const isNum = (v) => typeof v === "number" && Number.isFinite(v);
+// Index runs of consecutive numbers: a null y is a gap in the line, never an interpolated bridge.
+const runs = (ys) => ys.reduce((out, y, i) => (isNum(y) && (isNum(ys[i - 1]) ? out.at(-1).push(i) : out.push([i])), out), []);
+// Step-after interpolation (Kaplan–Meier): each value holds until the next x.
+const stepPts = (p) => p.flatMap((q, k) => (k ? [[q[0], p[k - 1][1]], q] : [q]));
+function logTicks(lo, hi) {
+  const a = Math.floor(Math.log10(lo)), b = Math.max(a + 1, Math.ceil(Math.log10(hi) - 1e-9)), t = [];
+  for (let e = a; e <= b; e++) for (const m of b - a < 2 ? [1, 2, 5] : [1]) t.push(+(m * 10 ** e).toPrecision(12));
+  return t.filter((x) => x <= 10 ** b);
+}
+// (geom-end)
+
+const CHARTS = {
+  grouped: (c, colors, nRows) => (c.labels.length ? groupedBars(c, colors, nRows) : null),
+
+  heatmap(c) {
+    // Ordered codes: 0 = neutral gray ("nothing happened"), 1..n = one-hue ordinal ramp, null = no data (hollow cell).
+    const codes = Object.keys(c.legend ?? {}).map(Number).sort((a, b) => a - b), ramp = codes.filter((k) => k > 0);
+    if (!c.rows.length || !c.cols.length || ramp.length > 4) return null;  // > 4 ordered classes: table alone
+    const step = (i) => (ramp.length === 1 ? 3 : Math.round(1 + (i * 3) / (ramp.length - 1)));
+    const col = new Map([[0, "var(--axis)"], ...ramp.map((k, i) => [k, `var(--ord-${step(i)})`])]);
+    const colour = (v) => col.get(v) ?? "transparent", name = (v) => (v == null ? "no data" : c.legend[v] ?? String(v));
+    const keys = [...codes.map((k) => [k, c.legend[k]]), ...(c.cells.some((r) => r.some((v) => v == null)) ? [[null, "no data"]] : [])];
+    const every = Math.ceil(c.cols.length / 15), g = c.row_groups;
+    return [
+      h("div", { class: "legend" }, keys.map(([k, l]) => h("span", {}, h("span", { class: "sw" + (col.has(k) ? "" : " nd"), style: `background:${colour(k)}` }), l))),
+      h("div", { class: "hm-wrap" }, h("div", { class: "hm chart", "data-cols": c.cols.length, role: "group",
+        "aria-label": `${fmt(c.rows.length)} rows by ${fmt(c.cols.length)} columns; arrow keys move across rows and columns`,
+        style: `grid-template-columns:min(140px, 25%) repeat(${c.cols.length}, minmax(5px, 28px))` },
+        h("div", { class: "ch" }), c.cols.map((x, j) => h("div", { class: "ch", "aria-hidden": "true" }, j % every ? "" : x)),
+        c.rows.map((r, i) => [
+          g && (i === 0 || g[i] !== g[i - 1]) && h("div", { class: "grp" }, g[i] ?? ""),
+          h("div", { class: "rl", title: r }, r),
+          c.cols.map((x, j) => { const v = c.cells[i]?.[j]; return tip(h("div", { class: "c" + (col.has(v) ? "" : " nd"), style: `background:${colour(v)}` }), `${r} · ${x}`, [{ v: name(v) }]); }),
+        ]))),
+    ];
+  },
+
+  line(c, colors) {
+    const W = 760, H = 280, L = 52, R = 16, T = 24, B = 40;
+    const num = c.x.every(isNum), logx = num && c.log_x;
+    let xt, x0, x1;
+    if (!num) { const k = Math.ceil(c.x.length / 8); xt = c.x.map((_, i) => i).filter((i) => i % k === 0); [x0, x1] = [0, Math.max(1, c.x.length - 1)]; }
+    else if (logx) { const pos = c.x.filter((x) => x > 0); if (!pos.length) return null; xt = logTicks(Math.min(...pos), Math.max(...pos)); [x0, x1] = [Math.log10(xt[0]), Math.log10(xt.at(-1))]; }
+    else { if (!c.x.length) return null; xt = ticksFor(Math.min(...c.x), Math.max(...c.x)); [x0, x1] = [xt[0], xt.at(-1)]; }
+    const sx = (v) => L + ((v - x0) / (x1 - x0 || 1)) * (W - L - R);
+    const xs = (v) => (!num ? sx(v) : logx ? (v > 0 ? sx(Math.log10(v)) : null) : sx(v));  // pixel x; log axis drops x <= 0
+    const px = c.x.map((x, i) => xs(num ? x : i));
+    const ys = c.series.flatMap((s) => [...s.y, ...(s.lo ?? []), ...(s.hi ?? [])]).filter(isNum);
+    if (!ys.length) return null;
+    const yt0 = ticksFor(c.y_min ?? Math.min(...ys), c.y_max ?? Math.max(...ys)), y0 = c.y_min ?? yt0[0], y1 = c.y_max ?? yt0.at(-1);
+    const yt = yt0.filter((v) => v >= y0 - 1e-9 && v <= y1 + 1e-9), sy = (v) => T + (1 - (v - y0) / (y1 - y0 || 1)) * (H - T - B);
+    const pts = (idx, val) => { const p = idx.map((i) => [px[i], sy(val[i])]); return c.step ? stepPts(p) : p; };
+    const d = (p) => "M" + p.map((q) => q.map((n) => n.toFixed(1)).join(",")).join("L");
+    const at = (arr, i) => (px[i] == null ? null : arr?.[i]);
+    const marks = c.series.map((s, j) => h("g", {},
+      s.lo && s.hi && runs(c.x.map((_, i) => (isNum(at(s.lo, i)) && isNum(at(s.hi, i)) ? 0 : null))).map((idx) =>
+        h("path", { d: d(pts(idx, s.hi)) + "L" + d(pts(idx, s.lo).reverse()).slice(1) + "Z", fill: colors[j], "fill-opacity": 0.1, stroke: "none" })),
+      runs(c.x.map((_, i) => at(s.y, i))).map((idx) => idx.length === 1
+        ? h("circle", { cx: px[idx[0]], cy: sy(s.y[idx[0]]), r: 4, fill: colors[j], stroke: "var(--surface)", "stroke-width": 2 })
+        : h("path", { d: d(pts(idx, s.y)), fill: "none", stroke: colors[j], "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }))));
+    const valid = c.x.map((_, i) => i).filter((i) => px[i] != null);
+    const ci = (s, i) => (isNum(s.lo?.[i]) && isNum(s.hi?.[i]) ? ` [${fmt(s.lo[i])}, ${fmt(s.hi[i])}]` : "");
+    const hits = valid.map((i, k) => {
+      const a = k ? (px[valid[k - 1]] + px[i]) / 2 : L, b = k < valid.length - 1 ? (px[i] + px[valid[k + 1]]) / 2 : W - R;
+      return tip(h("g", { class: "xh" }, h("rect", { x: a, y: T, width: Math.max(1, b - a), height: H - T - B, fill: "transparent" }),
+        h("line", { x1: px[i], x2: px[i], y1: T, y2: H - B })),
+        `${c.x_label ?? "x"} ${num ? fmt(c.x[i]) : c.x[i]}`,
+        c.series.map((s, j) => ({ v: isNum(s.y[i]) ? fmt(s.y[i]) + ci(s, i) : "no value", name: s.name, color: colors[j] })));
+    });
+    return [
+      legend(c.series, colors, "lkey"),
+      h("svg", { class: "lc chart", viewBox: `0 0 ${W} ${H}`, role: "group",
+        "aria-label": `${c.y_label ?? "y"} by ${c.x_label ?? "x"}${c.series.length > 1 ? ` for ${c.series.map((s) => s.name).join(", ")}` : ""}; arrow keys move along x` },
+        yt.map((v) => h("line", { x1: L, x2: W - R, y1: sy(v), y2: sy(v), stroke: `var(${v === y0 ? "--axis" : "--grid"})`, "shape-rendering": "crispEdges" })),
+        h("g", { "aria-hidden": "true" },
+          yt.map((v) => h("text", { x: L - 6, y: sy(v), "text-anchor": "end", "dominant-baseline": "middle" }, fmt(v))),
+          xt.map((v) => h("text", { x: xs(v), y: H - B + 16, "text-anchor": "middle" }, num ? fmt(v) : c.x[v])),
+          c.y_label && h("text", { class: "alab", x: 0, y: 10 }, c.y_label),
+          c.x_label && h("text", { class: "alab", x: (L + W - R) / 2, y: H - 4, "text-anchor": "middle" }, c.x_label + (logx ? " (log scale)" : ""))),
+        marks, hits),
+    ];
+  },
+
+  interval(c, colors) {
+    // Dot-and-whisker: estimate dot (10px, 2px surface ring) on its CI whisker; series stacked within a label's row.
+    const vals = c.series.flatMap((s) => [...s.est, ...s.lo, ...s.hi]).filter(isNum);
+    if (!c.labels.length || !vals.length) return null;
+    const { pct, grid, ticks } = hAxis(ticksFor(Math.min(...vals), Math.max(...vals)));
+    const ok = (s, i) => isNum(s.lo[i]) && isNum(s.hi[i]);
+    return [
+      legend(c.series, colors, "sw dotk"),
+      h("div", { class: "gb iv chart", role: "group", "aria-label": `${c.x_label ?? "estimate"} with intervals; arrow keys move between rows` },
+        c.labels.map((l, i) => [
+          h("div", { class: "lab", title: l }, l),
+          tip(h("div", { class: "plot", style: `background:${grid}` }, c.series.map((s, j) => h("div", { class: "line" },
+            ok(s, i) && h("div", { class: "wh", style: `background:${colors[j]};left:${pct(s.lo[i])}%;width:${pct(s.hi[i]) - pct(s.lo[i])}%` }),
+            isNum(s.est[i]) && h("div", { class: "dot", style: `background:${colors[j]};left:${pct(s.est[i])}%` })))),
+            l, c.series.map((s, j) => ({ v: isNum(s.est[i]) ? fmt(s.est[i]) + (ok(s, i) ? ` [${fmt(s.lo[i])}, ${fmt(s.hi[i])}]` : "") : "no value", name: s.name, color: colors[j] }))),
+        ]),
+        h("div", {}), ticks, h("div", {}), c.x_label && h("div", { class: "axl" }, c.x_label)),
+    ];
+  },
+};
+
+// A chart is drawn only when every series gets a palette slot (> 8 groups: the table alone; fold to "Other" if that comes up).
+function chartOf(c, nRows) {
+  const f = CHARTS[c?.kind], colors = f && (c.series ? slots(c.series.map((s) => s.name)) : []);
+  return colors ? f(c, colors, nRows) : null;
+}
+
+const VIEWS = {
+  table: (v) => v.rows.length
+    ? [tableOf(v.columns, v.rows), h("div", { class: "small muted" }, `showing ${fmt(v.rows.length)} of ${fmt(v.total)} rows`)]
+    : h("p", { class: "empty" }, "0 rows matched."),
+
+  bar(v) {
+    if (!v.labels.length) return h("p", { class: "empty" }, "No groups to show (0 rows matched).");
+    const max = Math.max(...v.values, 0) || 1, m = v.measure ?? "count";
+    return [
+      h("div", { class: "bars chart", role: "group", "aria-label": `${m} by group; arrow keys move between bars` }, v.labels.map((l, i) => [
+        h("div", { class: "lab", title: l }, l),
+        tip(h("div", { class: "track" }, h("div", { class: "bar", style: `width:${(v.values[i] / max) * 100}%` }),
+          h("span", { class: "val" }, fmt(v.values[i], m))), `${l} · ${m}`, [{ v: fmt(v.values[i], m) }]),
+      ])),
+      h("details", {}, h("summary", {}, "Table"), tableOf(["group", m], v.labels.map((l, i) => [l, v.values[i]]))),
+    ];
+  },
+
+  diverging(v) {
+    // Butterfly: neg grows left, pos grows right, one shared |value| scale.
+    const n = Math.max(v.pos.length, v.neg.length);
+    if (!n) return h("p", { class: "empty" }, "No terms to show.");
+    const max = Math.max(...[...v.pos, ...v.neg].map((r) => Math.abs(r.value)), 0) || 1;
+    const half = (r, side) => {
+      const el = h("div", { class: `half ${side}` }, r && [
+        side === "l" && h("span", { class: "val" }, fmt(r.value)),
+        h("div", { class: `bar ${side === "l" ? "neg" : ""}`, style: `width:${(Math.abs(r.value) / max) * 90}%` }),
+        side === "r" && h("span", { class: "val" }, fmt(r.value)),
+      ]);
+      return r ? tip(el, `“${r.label}” → ${side === "l" ? v.neg_name : v.pos_name}`, [{ v: fmt(r.value) }]) : el;
+    };
+    const rows = [];
+    for (let i = 0; i < n; i++) {
+      const a = v.neg[i], b = v.pos[i];
+      rows.push(h("div", { class: "lab l" }, a?.label ?? ""), half(a, "l"), half(b, "r"), h("div", { class: "lab" }, b?.label ?? ""));
+    }
+    return [
+      h("div", { class: "fw chart", role: "group", "aria-label": `terms leaning ${v.neg_name} vs ${v.pos_name}; arrow keys move between bars` },
+        h("div", { class: "hdr l" }, `more “${v.neg_name}”`, h("span", { class: "sw", style: "background:var(--pole-neg)" })),
+        h("div", { class: "hdr r" }, h("span", { class: "sw", style: "background:var(--series-1)" }), `more “${v.pos_name}”`),
+        rows),
+      h("details", {}, h("summary", {}, "Table"), tableOf(["term", "value", "leans"],
+        [...v.pos.map((r) => [r.label, r.value, v.pos_name]), ...v.neg.map((r) => [r.label, r.value, v.neg_name])])),
+    ];
+  },
+
+  tree(v) {
+    const depth = {};
+    for (const u of v.utterances) depth[u.id] = u.reply_to && u.reply_to in depth ? depth[u.reply_to] + 1 : 0;
+    // ponytail: linear chats would indent forever; cap visual depth, full reply_to is in the meta line.
+    const linear = v.utterances.every((u, i) => i === 0 || u.reply_to === v.utterances[i - 1].id);
+    return h("div", { class: "tree" },
+      h("div", { class: "small muted" }, `conversation ${v.conversation_id} · ${fmt(v.utterances.length)} utterances${linear ? " · linear" : ""}`),
+      v.utterances.map((u) => {
+        const meta = Object.entries(u).filter(([k]) => k.startsWith("meta.") || k.includes(".")).map(([k, x]) => `${k.replace(/^meta\./, "")}=${x}`).join(" ");
+        return h("div", { class: "utt", style: `margin-left:${linear ? 0 : Math.min(depth[u.id], 8) * 18}px` },
+          h("span", { class: "who" }, u.speaker), h("span", { class: "meta" }, meta), h("div", {}, u.text));
+      }));
+  },
+};
+
+// --- config forms generated from JSON schema ---
+function field(i, key, prop, value) {
+  // Read the live config on every edit: the form isn't rebuilt per keystroke, so a captured cfg would drop sibling edits.
+  const update = (v) => { const n = stageName(S.p.stages[i]); S.p.stages[i] = { [n]: { ...stageCfg(S.p.stages[i]), [key]: v } }; S.dirty = true; markStale(i); };
+  const help = prop.description ? `h-${i}-${key}` : null, err = `e-${i}-${key}`;
+  const a = { id: `f-${i}-${key}`, name: key, "aria-describedby": [help, err].filter(Boolean).join(" "),
+              list: COLUMN_FIELDS.has(key) || key === "keys" ? `dl-${i}-${key}` : null, "data-i": i };
+  let input;
+  if (prop.enum) {
+    input = h("select", { ...a, list: null, onchange: (e) => update(e.target.value) }, prop.enum.map((o) => h("option", { selected: o === value }, o)));
+  } else if (prop.type === "integer" || prop.type === "number") {
+    input = h("input", { ...a, list: null, type: "number", value: value ?? "", min: prop.minimum, max: prop.maximum,
+                         oninput: (e) => update(e.target.value === "" ? undefined : Number(e.target.value)) });
+  } else if (prop.type === "boolean") {
+    input = h("input", { ...a, list: null, type: "checkbox", checked: !!value, onchange: (e) => update(e.target.checked) });
+  } else if (prop.type === "array") {
+    input = h("input", { ...a, type: "text", value: (value ?? []).join(", "), placeholder: "comma, separated",
+                         oninput: (e) => update(e.target.value.split(",").map((s) => s.trim()).filter(Boolean)) });
+  } else {
+    input = h("input", { ...a, type: "text", value: value ?? "", oninput: (e) => update(e.target.value) });
+  }
+  return h("label", {}, h("span", {}, prop.title ?? key), input,
+    help && h("span", { class: "help", id: help }, prop.description), h("span", { class: "ferr", id: err }));
+}
+
+function columnsBefore(i) {
+  const steps = S.res?.steps ?? [];
+  for (let j = i - 1; j >= 0; j--) if (steps[j]?.columns) return steps[j].columns;
+  return S.res?.fields.utterance ?? [];
+}
+
+function refreshLists() {
+  document.querySelectorAll("datalist").forEach((d) => d.remove());
+  document.querySelectorAll("#stages input[list]").forEach((el) => {
+    const i = +el.dataset.i, cfg = stageCfg(S.p.stages[i] ?? {});
+    const opts = COLUMN_FIELDS.has(el.name) ? columnsBefore(i) : S.res?.fields[cfg.source ?? "speaker"] ?? [];
+    document.body.append(h("datalist", { id: el.getAttribute("list") }, opts.map((o) => h("option", { value: o }))));
+  });
+}
+
+function markStale(i) {
+  S.staleFrom = Math.min(S.staleFrom, i);
+  paintStale();
+}
+const paintStale = () => document.querySelectorAll(".card").forEach((c, j) => c.classList.toggle("stale", j >= S.staleFrom));
+
+// Pydantic: "ValidationError: 1 validation error for X\ncolumn\n  Field required [type=missing, ...]" -> [["column", "Field required"]]
+function fieldErrors(msg) {
+  if (!/validation error/.test(msg ?? "")) return null;
+  const lines = msg.split("\n"), out = [];
+  for (let k = 1; k < lines.length; k++)
+    if (lines[k] && !lines[k].startsWith(" ") && lines[k + 1]?.startsWith("  ")) out.push([lines[k], lines[k + 1].trim().replace(/\s*\[type=.*$/, "")]);
+  return out.length ? out : null;
+}
+
+function markErrors(i) {
+  const s = S.p.stages[i], props = S.schemas[stageName(s)]?.properties ?? {}, step = S.res?.steps[i];
+  const errs = step?.status === "error" ? fieldErrors(step.error) ?? [] : [];
+  for (const key of Object.keys(props)) {
+    const e = errs.find(([loc]) => loc.split(".")[0] === key);
+    const input = $(`f-${i}-${key}`), out = $(`e-${i}-${key}`);
+    if (input) e ? input.setAttribute("aria-invalid", "true") : input.removeAttribute("aria-invalid");
+    if (out) out.textContent = e ? e[1] : "";
+  }
+}
+
+function viewOf(v) {
+  const body = (VIEWS[v.kind] ?? ((x) => h("pre", {}, JSON.stringify(x, null, 2))))(v);
+  // `chart` above the table, `extra_charts` below it; with any chart drawn the table folds into its "Table" twin.
+  const [top, ...rest] = [v.chart, ...(v.extra_charts ?? [])].map((c) => chartOf(c, v.rows?.length ?? 0));
+  return [noteOf(v.note), top || rest.some(Boolean) ? [top, h("details", {}, h("summary", {}, "Table"), body), rest] : body];
+}
+
+function statusOf(i) {
+  const step = S.res?.steps[i], id = `st-${i}`;
+  if (S.job && i >= S.job.steps.length)
+    return h("div", { id, class: "status muted" }, S.job.status === "loading" ? "loading dataset…" : S.job.status === "running" && i === S.job.steps.length ? "running…" : "queued");
+  if (!step) return h("div", { id, class: "status muted" }, "not run");
+  if (step.status === "error") {
+    const errs = fieldErrors(step.error), props = S.schemas[step.stage]?.properties ?? {};
+    return h("div", { id, class: "status error" }, "⚠ ", errs
+      ? ["Invalid settings:", h("ul", {}, errs.map(([loc, m]) => h("li", {}, `${props[loc.split(".")[0]]?.title ?? loc}: ${m}`)))]
+      : step.error);
+  }
+  if (step.status === "skipped") return h("div", { id, class: "status muted" }, "skipped (earlier stage failed)");
+  const c = step.counts;
+  return h("div", { id, class: "status" }, `✓ ${fmt(c.utterances)} utterances · ${fmt(c.speakers)} speakers · ${fmt(c.conversations)} conversations · ${fmt(step.ms)} ms${step.cached ? " · cached" : ""}`);
+}
+
+function outOf(i) {
+  const step = S.res?.steps[i];
+  const out = h("div", { class: "out", id: `out-${i}` }, step?.view ? viewOf(step.view) : null);
+  out.querySelectorAll("details").forEach((d, k) => {  // keep open/closed across re-renders
+    const key = `${i}/${k}`;
+    d.open = S.open.has(key);
+    d.addEventListener("toggle", () => (d.open ? S.open.add(key) : S.open.delete(key)));
+  });
+  out.querySelectorAll(".chart").forEach(roving);
+  return out;
+}
+
+function card(s, i) {
+  const name = stageName(s), cfg = stageCfg(s), schema = S.schemas[name], about = schema?.["x-description"];
+  const edit = (f) => { f(); S.dirty = true; render(); };
+  const move = (d) => edit(() => { const a = S.p.stages; [a[i], a[i + d]] = [a[i + d], a[i]]; S.staleFrom = Math.min(S.staleFrom, i + Math.min(d, 0)); });
+  const label = name.replaceAll("_", " ");
+  return h("section", { class: "card" + (i >= S.staleFrom ? " stale" : ""), "aria-label": `stage ${i + 1}: ${label}` },
+    h("div", { class: "card-head" }, h("span", { class: "idx" }, i + 1), h("b", {}, label), h("span", { class: "sep" }),
+      h("button", { title: "Move up", "aria-label": `Move ${label} up`, disabled: i === 0, onclick: () => move(-1) }, "▲"),
+      h("button", { title: "Move down", "aria-label": `Move ${label} down`, disabled: i === S.p.stages.length - 1, onclick: () => move(1) }, "▼"),
+      h("button", { title: "Remove", "aria-label": `Remove ${label}`, onclick: () => edit(() => { S.p.stages.splice(i, 1); S.staleFrom = Math.min(S.staleFrom, i); }) }, "✕")),
+    about && h("p", { class: "sdesc" }, about),
+    schema ? h("form", { class: "cfg", onsubmit: (e) => e.preventDefault() },
+      Object.entries(schema.properties ?? {}).map(([k, prop]) => field(i, k, prop, cfg[k] ?? prop.default)))
+      : h("div", { class: "status error" }, `unknown stage ${name}`),
+    statusOf(i),
+    outOf(i));
+}
+
+function render() {
+  $("name").value = S.p.name; $("desc").value = S.p.description ?? "";
+  const r = S.p.reproduces;
+  $("repro").replaceChildren(...(r ? ["reproduces ", r.startsWith("http") ? h("a", { href: r, target: "_blank", rel: "noopener" }, r.replace(/\/+$/, "").split("/").pop()) : r] : []));
+  $("stages").replaceChildren(...S.p.stages.map(card));
+  S.p.stages.forEach((_, i) => markErrors(i));
+  refreshLists();
+  const ds = S.datasets[$("dataset").value];
+  $("snapshot").hidden = !["dsn", "zip_url"].includes(ds?.kind);
+}
+
+// In-place refresh while a run polls: every status line, plus the output of steps that just landed. Forms are never rebuilt,
+// so focus, typed text, scroll and open <details> survive.
+function paint(from = 0, to = from) {
+  S.p.stages.forEach((_, i) => {
+    $(`st-${i}`)?.replaceWith(statusOf(i));
+    if (i >= from && i < to) $(`out-${i}`)?.replaceWith(outOf(i));
+  });
+  paintStale();
+}
+
+async function run() {
+  // Background run: poll and paint each stage's result as it lands. Previous output stays (faded) until replaced.
+  $("run").disabled = true;
+  const token = (S.token = {});
+  announce("Run started");
+  let job = null;
+  try {
+    const { id } = await api("/api/runs", { method: "POST", body: JSON.stringify({ dataset: $("dataset").value, stages: S.p.stages }) });
+    S.job = { status: "queued", steps: [] }; paint();
+    let seen = 0;
+    do {
+      await new Promise((r) => setTimeout(r, 400));
+      if (token !== S.token) return;  // a newer run took over
+      job = await api(`/api/runs/${id}`);
+      if (token !== S.token) return;
+      S.job = job;
+      if (job.fields) S.res = { fields: job.fields, steps: job.steps.concat((S.res?.steps ?? []).slice(job.steps.length)) };
+      S.staleFrom = job.steps.length;
+      paint(seen, job.steps.length); seen = job.steps.length;
+    } while (!["done", "error"].includes(job.status));
+    if (job.status === "error") throw new Error(job.error);
+    S.res = { fields: job.fields, steps: job.steps };
+    S.staleFrom = Infinity;
+  } catch (e) { showError(e.message); announce(`Run failed: ${e.message}`); job = null; }
+  S.job = null;
+  $("run").disabled = false;
+  paint();
+  S.p.stages.forEach((_, i) => markErrors(i));
+  refreshLists();
+  if (job) {
+    const bad = job.steps.findIndex((s) => s.status === "error");
+    announce(bad < 0 ? `Run finished: ${job.steps.length} stages` : `Run failed at stage ${bad + 1} (${job.steps[bad].stage.replaceAll("_", " ")})`);
+  }
+}
+
+async function loadPipeline(name) {
+  const p = await api(`/api/pipelines/${name}`);
+  S.p = p; S.p.stages ??= []; S.res = null; S.staleFrom = Infinity; S.dirty = false; S.loaded = name;
+  S.colors = new Map(); S.open = new Set();
+  if (S.p.dataset && !(S.p.dataset in S.datasets)) {  // never quietly run it on whatever dataset is selected
+    render(); return showError(`This pipeline uses "${S.p.dataset}", which is not in datasets.yaml. See examples/README.md.`);
+  }
+  if (S.p.dataset in S.datasets) $("dataset").value = S.p.dataset;
+  render(); run();
+}
+
+async function fillDatasets() {
+  S.datasets = await api("/api/datasets");
+  const cur = $("dataset").value;
+  $("dataset").replaceChildren(...Object.entries(S.datasets).map(([n, d]) =>
+    h("option", { value: n }, n + (["dsn", "zip_url"].includes(d.kind) ? ` (${d.kind === "dsn" ? "db" : "export"} · ${d.snapshots.at(-1) ?? "no snapshot"})` : ""))));
+  if (cur in S.datasets) $("dataset").value = cur;
+}
+
+async function init() {
+  S.schemas = await api("/api/stages");
+  await fillDatasets();
+  const pipes = await api("/api/pipelines");
+  $("pipelines").replaceChildren(h("option", { value: "" }, "— new —"), ...pipes.map((p) => h("option", {}, p)));
+  $("add").append(...Object.entries(S.schemas).map(([n, s]) => {
+    const d = s["x-description"] ?? "", short = d.split(/(?<=[.;])\s/)[0];
+    return h("option", { value: n, title: d || null }, n.replaceAll("_", " ") + (short ? ` — ${short.length > 60 ? short.slice(0, 59) + "…" : short}` : ""));
+  }));
+  // Open on the example whose data ships in the repo: most others need a download or a built corpus.
+  const first = pipes.includes("phq9-fighting-words") ? "phq9-fighting-words" : pipes[0];
+  if (first) { $("pipelines").value = first; await loadPipeline(first); } else render();
+}
+
+$("pipelines").onchange = (e) => {
+  if (S.dirty && !confirm("Discard unsaved changes to this pipeline?")) { e.target.value = S.loaded; return; }
+  if (e.target.value) return loadPipeline(e.target.value).catch((err) => showError(err.message));
+  S.p = { name: "untitled", description: "", stages: [] }; S.res = null; S.dirty = false; S.loaded = "";
+  S.colors = new Map(); S.open = new Set(); render();
+};
+$("add").onchange = (e) => { if (!e.target.value) return; S.p.stages.push({ [e.target.value]: {} }); e.target.value = ""; S.dirty = true; render(); };
+$("name").oninput = (e) => { S.p.name = e.target.value; S.dirty = true; };
+$("desc").oninput = (e) => { S.p.description = e.target.value; S.dirty = true; };
+// Switching dataset keeps every edit (only results are recomputed), so no confirm here.
+$("dataset").onchange = () => { S.res = null; render(); run(); };
+$("run").onclick = run;
+$("save").onclick = async () => {
+  const slug = S.p.name.trim().toLowerCase().replace(/[^\w-]+/g, "-").replace(/^-+|-+$/g, "");
+  if (!slug) return showError("Name the pipeline before saving.");
+  // The list mixes bundled examples and your own saves; the API can't tell them apart, so confirm any overwrite.
+  const exists = [...$("pipelines").options].some((o) => o.value === slug);
+  if (exists && !confirm(`A pipeline named “${slug}” already exists (it may be a bundled example). Overwrite it?`)) return;
+  try {
+    await api(`/api/pipelines/${slug}`, { method: "PUT", body: JSON.stringify({ ...S.p, name: slug, dataset: $("dataset").value }) });
+    S.p.name = slug; S.dirty = false; S.loaded = slug;
+    if (!exists) $("pipelines").append(h("option", {}, slug));
+    $("pipelines").value = slug; $("name").value = slug; announce(`Saved ${slug}`);
+  } catch (e) { showError(e.message); }
+};
+$("snapshot").onclick = async () => {
+  $("snapshot").disabled = true;
+  try { await api(`/api/datasets/${$("dataset").value}/snapshot`, { method: "POST" }); await fillDatasets(); S.res = null; render(); run(); }
+  catch (e) { showError(e.message); }
+  $("snapshot").disabled = false;
+};
+addEventListener("scroll", () => ($("tip").style.display = "none"), { passive: true });  // fixed-position tip would float off its mark
+addEventListener("keydown", (e) => {
+  if (e.key === "Escape") $("tip").style.display = "none";
+  if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && !$("run").disabled) run();  // no duplicate run while one is in progress
+});
+init().catch((e) => showError(e.message));
+</script>
+</body>
+</html>

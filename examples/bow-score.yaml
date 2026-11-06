@@ -1,0 +1,6 @@
+name: bow-score
+description: Which words predict a positively scored r/Cornell comment? (bag-of-words logistic regression)
+reproduces: https://github.com/CornellNLP/ConvoKit/blob/master/examples/vectors/bag-of-words-demo.ipynb
+dataset: subreddit-Cornell
+stages:
+  - bow_classify: {label: meta.score, op: ">", value: "0", top_k: 10}

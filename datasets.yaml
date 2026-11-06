@@ -1,0 +1,23 @@
+# Datasets offered in the app. Paths are relative to this file; ${VAR} is read from the environment.
+# Everything active here works from a fresh clone: the first is in the repo, the rest download from ConvoKit.
+synthetic: {dir: examples/data/synthetic}
+reddit-corpus-small: {convokit: reddit-corpus-small}
+movie-corpus: {convokit: movie-corpus}
+wikipedia-politeness-corpus: {convokit: wikipedia-politeness-corpus}
+stack-exchange-politeness-corpus: {convokit: stack-exchange-politeness-corpus}
+politeness-wiki-se: {convokit: [wikipedia-politeness-corpus, stack-exchange-politeness-corpus]}
+wiki-corpus: {convokit: wiki-corpus}
+wiki-corpus-4000: {convokit: wiki-corpus, utterance_end_index: 4000}
+subreddit-Cornell: {convokit: subreddit-Cornell}
+conversations-gone-awry-corpus: {convokit: conversations-gone-awry-corpus}  # Zhang et al. 2018; see examples/papers/conversations-gone-awry.md
+
+# Paper reproductions that need a corpus you build first. Build it, then uncomment:
+# supreme-echoes-2012: {dir: data/supreme-echoes-2012}      # steps in examples/papers/echoes-of-power.md (no script in the repo)
+# absolutist-forums: {dir: data/papers/absolutist/corpus}   # build with examples/papers/absolutist/to_convokit.py; see examples/papers/absolutist.md
+
+# Your own data, one example of each kind. Keep credentials in environment variables, not in this file.
+# my-folder: {dir: path/to/corpus}                          # a ConvoKit corpus folder (trusted input: see README, Security)
+# my-db: {dsn: "${MY_DATABASE_URL}"}                        # read-only Postgres with ck_utterances, ck_speakers, ck_conversations views; saved as a snapshot
+# my-zip: {zip: path/to/export.zip}                         # a zipped ConvoKit corpus
+# my-url: {zip_url: "https://example.org/corpus.zip", bearer: "${MY_EXPORT_TOKEN}", sha256_header: X-Export-Sha256}  # downloaded once as a snapshot; rejected unless that header holds the download's SHA-256
+# my-study: {zip: path/to/export.zip, participants: path/to/participants.csv, participants_on: meta.owner_id}  # any kind: joins a CSV with a participant_id column onto conversations by that conversation metadata column

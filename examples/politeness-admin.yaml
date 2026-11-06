@@ -1,0 +1,8 @@
+name: politeness-admin
+description: Politeness strategy use by Wikipedia admins vs non-admins (first 4000 utterances).
+reproduces: https://github.com/CornellNLP/ConvoKit/blob/master/examples/politeness-strategies/Politeness_Marker_and_Summarize_Demo.ipynb
+dataset: wiki-corpus-4000
+stages:
+  - parse: {}
+  - politeness: {}
+  - compare_groups: {column: meta.politeness_strategies, group_by: meta.is-admin, class1: "False", class2: "True"}

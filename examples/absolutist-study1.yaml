@@ -1,0 +1,24 @@
+name: absolutist-study1
+description: Absolutist-word rate (share of words) in anxiety, depression and suicidal-ideation forums vs 19 control forums.
+reproduces: https://pmc.ncbi.nlm.nih.gov/articles/PMC6376956/  # Al-Mosaiwi & Johnstone 2018, Clin Psych Sci 6(4)
+dataset: absolutist-forums
+stages:
+  # Table S2's 19 words, with the LIWC wildcards the authors' run evidently used (absolut*, entire*, total*, everyone*);
+  # exclude = false positives (negation/qualifier + word, salutations). See examples/papers/absolutist.md.
+  - lexicon_net: {into: absolutist, words: [absolut*, all, always, complete, completely, constant, constantly, definitely, entire*, ever, every, everyone*, everything, full, must, never, nothing, total*, whole],
+      exclude: [hi all, hi everyone, hello all, hello everyone, hey all, hey everyone, dear all, dear everyone, thanks all, thanks everyone, thank you all, thank you everyone, full time, not absolutely, not all, not always, not complete, not completely, not constant, not constantly, not definitely, not entire, not entirely, not every, not everyone, not everything, not full, not never, not nothing, not total, not totally, not whole, almost absolutely, almost all, almost always, almost complete, almost completely, almost constant, almost constantly, almost definitely, almost entire, almost entirely, almost every, almost everyone, almost everything, almost full, almost never, almost nothing, almost total, almost totally, almost whole, every few, every 1, every 2, every 3, every 4, every 5, every 6, every 10, every 12, every two, every three, every four]}
+  - filter: {column: n_tokens, op: ">=", value: "100"}  # paper: members with >= 100 words
+  - compare_groups: {column: absolutist, group_by: meta.group, class1: anxiety, class2: control}
+  - compare_groups: {column: absolutist, group_by: meta.group, class1: depression, class2: control}
+  - compare_groups: {column: absolutist, group_by: meta.group, class1: suicidal_ideation, class2: control}
+  - compare_groups: {column: absolutist, group_by: meta.group, class1: suicidal_ideation, class2: anxiety}
+  - compare_groups: {column: absolutist, group_by: meta.group, class1: suicidal_ideation, class2: depression}
+  - compare_groups: {column: absolutist, group_by: meta.group, class1: anxiety, class2: depression}
+  # Forum-level view (forums are the paper's random effect; its Study 1 d comes from a mixed model, not this).
+  - rollup: {column: absolutist, to: conversation, agg: mean, into: absolutist}
+  - compare_groups: {level: conversation, column: meta.absolutist, group_by: meta.group, class1: anxiety, class2: control}
+  - compare_groups: {level: conversation, column: meta.absolutist, group_by: meta.group, class1: depression, class2: control}
+  - compare_groups: {level: conversation, column: meta.absolutist, group_by: meta.group, class1: suicidal_ideation, class2: control}
+  - compare_groups: {level: conversation, column: meta.absolutist, group_by: meta.group, class1: suicidal_ideation, class2: anxiety}
+  - compare_groups: {level: conversation, column: meta.absolutist, group_by: meta.group, class1: suicidal_ideation, class2: depression}
+  - compare_groups: {level: conversation, column: meta.absolutist, group_by: meta.group, class1: anxiety, class2: depression}

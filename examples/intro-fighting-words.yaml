@@ -1,0 +1,7 @@
+name: intro-fighting-words
+description: How r/Christianity and r/atheism talk differently (Fighting Words, 1-3 grams).
+reproduces: https://github.com/CornellNLP/ConvoKit/blob/master/examples/Introduction_to_ConvoKit.ipynb
+dataset: reddit-corpus-small
+stages:
+  - aggregate: {by: meta.subreddit, measure: utterances}
+  - fighting_words: {group_by: meta.subreddit, class1: Christianity, class2: atheism, ngram_max: 3}

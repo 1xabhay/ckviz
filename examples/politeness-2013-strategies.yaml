@@ -1,0 +1,8 @@
+name: politeness-2013-strategies
+description: "Table 3 of Danescu-Niculescu-Mizil et al. 2013: per politeness strategy, mean annotated politeness score and % of requests in the top quartile (Wikipedia requests)"
+reproduces: https://arxiv.org/abs/1306.6078
+dataset: wikipedia-politeness-corpus
+stages:
+  - parse: {}
+  - politeness: {}
+  - strategy_table: {features: meta.politeness_strategies, score: meta.Normalized Score, label: meta.Binary, op: "==", value: "1"}

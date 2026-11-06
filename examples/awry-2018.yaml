@@ -1,0 +1,22 @@
+name: awry-2018
+description: "Zhang et al. 2018, Conversations Gone Awry: Figure 2A log-odds and Table 3 paired accuracies (leave-one-page-out logistic regression) from the first comment-reply exchange"
+reproduces: https://arxiv.org/abs/1805.05345
+dataset: conversations-gone-awry-corpus
+stages:
+  - join_meta: {source: conversation, keys: [annotation_year]}
+  - filter: {column: conversation.annotation_year, op: contains, value: "2018"}
+  - filter: {column: meta.is_section_header, op: "==", value: "false"}
+  - first_n: {n: 2}
+  - politeness: {}
+  - prompt_types: {vectors: downloads/conversations-gone-awry-corpus/vect_info.prompt_types__prompt_dists.6}
+  # the paper's 19 strategies per comment = ConvoKit's 21 minus HASPOSITIVE/HASNEGATIVE (Liu's lexicon = the sentiment baseline)
+  - exchange: {column: meta.politeness_strategies, into: politeness, keys: [Please, Please_start, HASHEDGE, Indirect_(btw), Hedges, Factuality, Deference, Gratitude, Apologizing, 1st_person_pl., 1st_person, 1st_person_start, 2nd_person, 2nd_person_start, Indirect_(greeting), Direct_question, Direct_start, SUBJUNCTIVE, INDICATIVE]}
+  - exchange: {column: meta.politeness_strategies, into: sentiment, keys: [HASPOSITIVE, HASNEGATIVE]}
+  - exchange: {column: meta.prompt_type, into: prompts}
+  - log_odds: {column: meta.politeness, label: meta.conversation_has_personal_attack, value: "true", min_count: 50}
+  - log_odds: {column: meta.prompts, label: meta.conversation_has_personal_attack, value: "true", min_count: 50}
+  - paired_classify: {features: [unigrams], label: meta.conversation_has_personal_attack, max_words: 5000}
+  - paired_classify: {features: [meta.sentiment], label: meta.conversation_has_personal_attack}
+  - paired_classify: {features: [meta.politeness], label: meta.conversation_has_personal_attack}
+  - paired_classify: {features: [meta.prompts], label: meta.conversation_has_personal_attack}
+  - paired_classify: {features: [meta.politeness, meta.prompts], label: meta.conversation_has_personal_attack}

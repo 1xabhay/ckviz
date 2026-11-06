@@ -1,0 +1,81 @@
+[project]
+name = "ckviz"
+version = "0.1.0"
+description = "Pipeline app for analysing ConvoKit-format conversation corpora"
+requires-python = ">=3.12"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Abhay Singh" }]
+keywords = ["convokit", "conversation-analysis", "computational-social-science", "nlp", "reproducibility"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Text Processing :: Linguistic",
+]
+dependencies = [
+    "convokit>=5.0.0",
+    "en-core-web-sm",
+    "fastapi>=0.162.0",
+    "pandas>=3.1.0",
+    "psycopg[binary]>=3.3.6",
+    "pydantic>=2.14.2",
+    "pyyaml>=6.0.3",
+    "torch>=2.15.0",
+    "uvicorn>=0.54.0",
+]
+
+[project.urls]
+Repository = "https://github.com/1xabhay/ckviz"
+Issues = "https://github.com/1xabhay/ckviz/issues"
+
+[project.optional-dependencies]
+dlatk = ["ckviz-dlatk"]
+stats = ["ckviz-stats"]
+sentiment = ["ckviz-sentiment"]
+
+[project.scripts]
+ckviz = "ckviz:main"
+
+[build-system]
+requires = ["uv_build>=0.11.7,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "ckviz-dlatk",
+    "ckviz-sentiment",
+    "ckviz-stats",
+    "httpx>=0.28.1",
+    "openpyxl>=3.1.5",
+    "pytest>=9.2.0",
+    "ruff>=0.17.3",
+]
+
+[tool.ruff.lint]
+select = ["F", "E9"]
+ignore = ["F403", "F405"]  # star imports are how stage modules share the @stage API
+
+[tool.pytest.ini_options]
+pythonpath = ["tests"]
+testpaths = ["tests", "plugins"]
+filterwarnings = ["ignore::DeprecationWarning"]
+
+# CPU-only torch in Linux containers (convokit 5 pulls torch via sentence-transformers); default wheels elsewhere.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
+ckviz-dlatk = { workspace = true }
+ckviz-stats = { workspace = true }
+ckviz-sentiment = { workspace = true }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+# Plugins are workspace packages under plugins/, each exposed as an opt-in extra: `uv sync --extra <name>`.
+[tool.uv.workspace]
+members = ["plugins/*"]

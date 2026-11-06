@@ -1,0 +1,8 @@
+name: sigdial-mixed-gender-casefold
+description: Same study, matching gender case-insensitively (the dataset now mixes m/M, f/F).
+reproduces: https://github.com/CornellNLP/ConvoKit/blob/master/examples/sigdial-demo.ipynb
+dataset: movie-corpus
+stages:
+  - text_clean: {}
+  - speakers_include: {key: gender, values: [M, F], into: mixed, ignore_case: true}
+  - fighting_words: {group_by: mixed, class1: "True", class2: "False", ngram_max: 3}

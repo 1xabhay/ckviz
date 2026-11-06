@@ -1,0 +1,9 @@
+name: phq9-fighting-words
+description: Words distinguishing higher- vs lower-score users (median split) on the invented corpus; finds the planted words.
+dataset: synthetic
+stages:
+  - join_meta: {source: speaker, keys: [phq9]}
+  - filter: {column: meta.role, op: "==", value: person}
+  - split: {column: speaker.phq9, into: group, labels: [higher, lower]}
+  - fighting_words: {group_by: group, class1: higher, class2: lower, ngram_max: 2}
+  - show_conversation: {conversation_id: ""}

@@ -1,0 +1,22 @@
+name: daily-ping-descriptive
+description: >
+  Descriptive overview of chat logs where a bot messages each participant daily. The dataset name is a placeholder:
+  point it at your own corpus in datasets.yaml, and change the meta.* field names below to yours. Without meta.sent_at,
+  latencies fall back to the logged timestamp.
+dataset: daily-ping
+stages:
+  # Rows by status and sender type.
+  - join_meta: {source: speaker, keys: [type]}
+  - count_by: {rows: meta.status, cols: speaker.type}
+  # Filters drop rows for every later stage; this status value is the example's, set it to one of yours.
+  - filter: {column: meta.status, op: "!=", value: failed}
+  # Words per message and seconds from the message replied to, by sender type.
+  - word_count: {into: words}
+  - describe: {column: words, group_by: speaker.type}
+  - reply_latency: {into: latency_s, time_column: meta.sent_at, fallback_to_timestamp: true}
+  - describe: {column: latency_s, group_by: speaker.type}
+  - show_conversation: {}
+  # Distinct speakers per day; day 1 = the UTC calendar day of the conversation's first message.
+  - time_bins: {unit: day, relative_to: conversation, tz: UTC, into: day}
+  - filter: {column: speaker.type, op: "==", value: user}
+  - count_by: {rows: day, measure: speakers}

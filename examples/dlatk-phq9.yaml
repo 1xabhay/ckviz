@@ -1,0 +1,6 @@
+name: dlatk-phq9
+description: DLATK differential language analysis — unigrams correlated with the invented score across users; finds the planted words.
+dataset: synthetic
+stages:
+  - filter: {column: meta.role, op: "==", value: person}
+  - dlatk_ngrams_correlate: {level: speaker, outcome: meta.phq9, n: 1, p_occ: 0.05, occ_group_freq_thresh: 500, group_freq_thresh: 50, correction: none}

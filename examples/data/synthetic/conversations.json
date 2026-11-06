@@ -1,0 +1,154 @@
+{
+  "c01-000": {
+    "user_id": "user01",
+    "age": 25,
+    "gender": "woman",
+    "persona": "Fictional character: a stage carpenter.",
+    "phq9": 21,
+    "n_utterances": 82
+  },
+  "c02-000": {
+    "user_id": "user02",
+    "age": 69,
+    "gender": "non-binary person",
+    "persona": "Fictional character: a weather observer.",
+    "phq9": 6,
+    "n_utterances": 82
+  },
+  "c03-000": {
+    "user_id": "user03",
+    "age": 22,
+    "gender": "non-binary person",
+    "persona": "Fictional character: a lighthouse keeper.",
+    "phq9": 0,
+    "n_utterances": 82
+  },
+  "c04-000": {
+    "user_id": "user04",
+    "age": 71,
+    "gender": "non-binary person",
+    "persona": "Fictional character: a beekeeper.",
+    "phq9": 3,
+    "n_utterances": 82
+  },
+  "c05-000": {
+    "user_id": "user05",
+    "age": 24,
+    "gender": "non-binary person",
+    "persona": "Fictional character: a bookbinder.",
+    "phq9": 9,
+    "n_utterances": 81
+  },
+  "c06-000": {
+    "user_id": "user06",
+    "age": 55,
+    "gender": "non-binary person",
+    "persona": "Fictional character: a glass blower.",
+    "phq9": 12,
+    "n_utterances": 81
+  },
+  "c07-000": {
+    "user_id": "user07",
+    "age": 32,
+    "gender": "non-binary person",
+    "persona": "Fictional character: a map illustrator.",
+    "phq9": 19,
+    "n_utterances": 81
+  },
+  "c08-000": {
+    "user_id": "user08",
+    "age": 24,
+    "gender": "woman",
+    "persona": "Fictional character: a piano tuner.",
+    "phq9": 22,
+    "n_utterances": 81
+  },
+  "c09-000": {
+    "user_id": "user09",
+    "age": 34,
+    "gender": "man",
+    "persona": "Fictional character: a tile layer.",
+    "phq9": 16,
+    "n_utterances": 81
+  },
+  "c10-000": {
+    "user_id": "user10",
+    "age": 29,
+    "gender": "woman",
+    "persona": "Fictional character: a kite designer.",
+    "phq9": 27,
+    "n_utterances": 81
+  },
+  "c11-000": {
+    "user_id": "user11",
+    "age": 51,
+    "gender": "woman",
+    "persona": "Fictional character: a puppet maker.",
+    "phq9": 7,
+    "n_utterances": 81
+  },
+  "c12-000": {
+    "user_id": "user12",
+    "age": 32,
+    "gender": "woman",
+    "persona": "Fictional character: a canal lock keeper.",
+    "phq9": 13,
+    "n_utterances": 81
+  },
+  "c13-000": {
+    "user_id": "user13",
+    "age": 54,
+    "gender": "man",
+    "persona": "Fictional character: a hat maker.",
+    "phq9": 1,
+    "n_utterances": 81
+  },
+  "c14-000": {
+    "user_id": "user14",
+    "age": 35,
+    "gender": "woman",
+    "persona": "Fictional character: a zookeeper.",
+    "phq9": 15,
+    "n_utterances": 81
+  },
+  "c15-000": {
+    "user_id": "user15",
+    "age": 40,
+    "gender": "man",
+    "persona": "Fictional character: a ferry pilot.",
+    "phq9": 18,
+    "n_utterances": 81
+  },
+  "c16-000": {
+    "user_id": "user16",
+    "age": 35,
+    "gender": "non-binary person",
+    "persona": "Fictional character: a bell ringer.",
+    "phq9": 4,
+    "n_utterances": 81
+  },
+  "c17-000": {
+    "user_id": "user17",
+    "age": 38,
+    "gender": "non-binary person",
+    "persona": "Fictional character: a sign painter.",
+    "phq9": 10,
+    "n_utterances": 81
+  },
+  "c18-000": {
+    "user_id": "user18",
+    "age": 24,
+    "gender": "woman",
+    "persona": "Fictional character: a clock repairer.",
+    "phq9": 25,
+    "n_utterances": 81
+  },
+  "c19-000": {
+    "user_id": "user19",
+    "age": 71,
+    "gender": "non-binary person",
+    "persona": "Fictional character: a cheese taster.",
+    "phq9": 24,
+    "n_utterances": 81
+  }
+}

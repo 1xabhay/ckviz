@@ -1,0 +1,19 @@
+name: absolutist-study1-mixed
+description: Study 1 as the paper ran it, a WC-weighted mixed model with forum random intercepts on log10(% absolutist + 1). Needs the ckviz-stats plugin.
+reproduces: https://pmc.ncbi.nlm.nih.gov/articles/PMC6376956/  # Al-Mosaiwi & Johnstone 2018, Clin Psych Sci 6(4); see examples/papers/absolutist-mixed.md
+dataset: absolutist-forums
+stages:
+  # Same dictionary and false-positive phrases as examples/absolutist-study1.yaml.
+  - lexicon_net: {into: absolutist, words: [absolut*, all, always, complete, completely, constant, constantly, definitely, entire*, ever, every, everyone*, everything, full, must, never, nothing, total*, whole],
+      exclude: [hi all, hi everyone, hello all, hello everyone, hey all, hey everyone, dear all, dear everyone, thanks all, thanks everyone, thank you all, thank you everyone, full time, not absolutely, not all, not always, not complete, not completely, not constant, not constantly, not definitely, not entire, not entirely, not every, not everyone, not everything, not full, not never, not nothing, not total, not totally, not whole, almost absolutely, almost all, almost always, almost complete, almost completely, almost constant, almost constantly, almost definitely, almost entire, almost entirely, almost every, almost everyone, almost everything, almost full, almost never, almost nothing, almost total, almost totally, almost whole, every few, every 1, every 2, every 3, every 4, every 5, every 6, every 10, every 12, every two, every three, every four]}
+  - filter: {column: n_tokens, op: ">=", value: "100"}  # paper: members with >= 100 words
+  - filter: {column: meta.group, op: in, value: "control, anxiety, depression, suicidal_ideation"}  # Study 1 groups
+  # The paper's model (supplement .sps): MIXED log10(x+1) BY condition, /REGWGT=WC, /RANDOM forum, REML, Satterthwaite df.
+  - mixed_model: {column: absolutist, scale: 100, transform: log10p1, weights: n_tokens, group_by: meta.group, cluster: conversation_id,
+      reference: control, contrasts: [anxiety vs control, depression vs control, suicidal_ideation vs control, suicidal_ideation vs anxiety, suicidal_ideation vs depression]}
+  # The same model on the untransformed %: what the authors' Figshare workbook ran (its d's: 3.21, 3.06, 4.99, 2.14, 2.13).
+  - mixed_model: {column: absolutist, scale: 100, weights: n_tokens, group_by: meta.group, cluster: conversation_id,
+      reference: control, contrasts: [anxiety vs control, depression vs control, suicidal_ideation vs control, suicidal_ideation vs anxiety, suicidal_ideation vs depression]}
+  # Coarse check without the mixed model: one-way ANOVA on forum means.
+  - rollup: {column: absolutist, to: conversation, agg: mean, into: absolutist}
+  - anova: {level: conversation, column: meta.absolutist, group_by: meta.group}

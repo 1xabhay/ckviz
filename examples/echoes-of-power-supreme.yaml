@@ -1,0 +1,9 @@
+name: echoes-of-power-supreme
+description: Lawyers coordinate more to Supreme Court Justices than Justices to lawyers (Echoes of Power, Fig. 4).
+reproduces: https://arxiv.org/abs/1112.3670 (Fig. 4), on the paper's 204 cases (ConvoKit coordination notebook, Example 3)
+dataset: supreme-echoes-2012
+stages:
+  # Speakers grouped by role (A = lawyer, J = Justice); each person-in-a-case counts separately (paper footnote 14).
+  - coordination: {group_by: meta.type, side: speaker, speaker_column: meta.type, speaker_op: in, speaker_value: "A, J",
+                   target_column: meta.type, target_op: in, target_value: "A, J",
+                   speaker_thresh: 3, target_thresh: 3, split_by: [meta.case_id]}

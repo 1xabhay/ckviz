@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use ckviz, please cite it, and cite the papers and corpora your analysis relies on."
+title: ckviz
+type: software
+authors:
+  - given-names: Abhay
+    family-names: Singh
+version: 0.1.0
+license: MIT
+repository-code: "https://github.com/1xabhay/ckviz"

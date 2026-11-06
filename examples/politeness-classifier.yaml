@@ -1,0 +1,9 @@
+name: politeness-classifier
+description: Do politeness strategies predict whether annotators judged a request polite? (5-fold CV)
+reproduces: https://github.com/CornellNLP/ConvoKit/blob/master/examples/politeness-strategies/politeness_demo.ipynb
+dataset: wikipedia-politeness-corpus
+stages:
+  - parse: {}
+  - politeness: {}
+  - filter: {column: meta.Binary, op: "!=", value: "0"}
+  - classify_cv: {features: meta.politeness_strategies, label: meta.Binary, op: "==", value: "1", folds: 5, seed: 0}
